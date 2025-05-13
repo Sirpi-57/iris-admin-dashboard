@@ -1,49 +1,80 @@
 # set_admin_claim.py
 import firebase_admin
 from firebase_admin import credentials, auth
-import os # Used to construct path reliably
+import os
+import json
+from dotenv import load_dotenv
 
-# --- EDIT THIS LINE: Replace with the ACTUAL PATH or just the filename if it's in the same folder ---
-SERVICE_ACCOUNT_KEY_FILE = './iris-service-account.json' # Assumes the key file is in the same folder
+# Load environment variables from .env file
+load_dotenv()
 
-# --- EDIT THIS LINE: Replace with the UID of the user you want to make an admin ---
-UID_TO_MAKE_ADMIN = 'QwuJ1v27mXUDoTMVMBPO295l6Lm1'
+def main():
+    try:
+        # Method 1: Create service account JSON from environment variables
+        service_account_info = {
+            "type": os.getenv("FIREBASE_ADMIN_TYPE"),
+            "project_id": os.getenv("FIREBASE_ADMIN_PROJECT_ID"),
+            "private_key_id": os.getenv("FIREBASE_ADMIN_PRIVATE_KEY_ID"),
+            "private_key": os.getenv("FIREBASE_ADMIN_PRIVATE_KEY").replace("\\n", "\n"),
+            "client_email": os.getenv("FIREBASE_ADMIN_CLIENT_EMAIL"),
+            "client_id": os.getenv("FIREBASE_ADMIN_CLIENT_ID"),
+            "auth_uri": os.getenv("FIREBASE_ADMIN_AUTH_URI"),
+            "token_uri": os.getenv("FIREBASE_ADMIN_TOKEN_URI"),
+            "auth_provider_x509_cert_url": os.getenv("FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL"),
+            "client_x509_cert_url": os.getenv("FIREBASE_ADMIN_CLIENT_X509_CERT_URL"),
+            "universe_domain": os.getenv("FIREBASE_ADMIN_UNIVERSE_DOMAIN")
+        }
 
+        # Get admin user UID from environment variables
+        admin_uid = os.getenv("ADMIN_USER_UID")
+        
+        if not admin_uid:
+            print("ERROR: ADMIN_USER_UID not found in environment variables.")
+            print("Please set ADMIN_USER_UID in your .env file.")
+            return
+        
+        # Method 2: Alternative approach - look for service account path in environment
+        service_account_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+        
+        # Choose credential method based on available environment variables
+        if all(service_account_info.values()):
+            # Use Method 1: in-memory service account
+            print("Using service account credentials from environment variables.")
+            cred = credentials.Certificate(service_account_info)
+        elif service_account_path and os.path.exists(service_account_path):
+            # Use Method 2: file-based service account
+            print(f"Using service account from file: {service_account_path}")
+            cred = credentials.Certificate(service_account_path)
+        else:
+            print("ERROR: No valid Firebase credentials found.")
+            print("Please either:")
+            print("1. Set all FIREBASE_ADMIN_* environment variables in your .env file")
+            print("2. Set FIREBASE_SERVICE_ACCOUNT_PATH to point to your service account JSON file")
+            return
+        
+        # Initialize the Firebase Admin SDK
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK Initialized successfully.")
 
-try:
-    # Construct the absolute path to the key file
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    key_file_path = os.path.join(script_dir, SERVICE_ACCOUNT_KEY_FILE)
+        # Set the custom claim { isAdmin: true } for the specified user
+        print(f"Attempting to set isAdmin=true claim for user UID: {admin_uid}")
 
-    if not os.path.exists(key_file_path):
-        print(f"ERROR: Service account key file not found at: {key_file_path}")
-        exit(1)
+        # Set the custom claim. This merges claims, not replaces all.
+        auth.set_custom_user_claims(admin_uid, {'isAdmin': True})
 
-    # Initialize the Firebase Admin SDK
-    cred = credentials.Certificate(key_file_path)
-    firebase_admin.initialize_app(cred)
-    print("Firebase Admin SDK Initialized using Python.")
+        print(f"\nSUCCESS: Successfully set isAdmin=true claim for user: {admin_uid}")
+        print("IMPORTANT: The user must sign out and sign back in for the claim to take effect.")
 
-except Exception as e:
-    print(f"ERROR: Failed to initialize Firebase Admin SDK: {e}")
-    exit(1)
+        # Optional: Verify by fetching the user record
+        user = auth.get_user(admin_uid)
+        print(f"Verification - Current claims for user {user.email}: {user.custom_claims}")
 
+    except auth.UserNotFoundError:
+        print(f"\nERROR: User with UID '{admin_uid}' not found in Firebase Authentication.")
+    except ValueError as ve:
+        print(f"\nERROR: Invalid parameter - {ve}")
+    except Exception as e:
+        print(f"\nERROR: {e}")
 
-# Set the custom claim { isAdmin: true } for the specified user
-print(f"Attempting to set isAdmin=true claim for user UID: {UID_TO_MAKE_ADMIN}")
-
-try:
-    # Set the custom claim. This merges claims, not replaces all.
-    auth.set_custom_user_claims(UID_TO_MAKE_ADMIN, {'isAdmin': True})
-
-    print(f"\nSUCCESS: Successfully set isAdmin=true claim for user: {UID_TO_MAKE_ADMIN}")
-    print("IMPORTANT: The user must sign out and sign back in for the claim to take effect.")
-
-    # Optional: Verify by fetching the user record (uncomment to use)
-    # user = auth.get_user(UID_TO_MAKE_ADMIN)
-    # print(f"Verification - Current claims for user {user.email}: {user.custom_claims}")
-
-except auth.UserNotFoundError:
-    print(f"\nERROR: User with UID '{UID_TO_MAKE_ADMIN}' not found in Firebase Authentication.")
-except Exception as e:
-    print(f"\nERROR: Failed to set custom claim: {e}")
+if __name__ == "__main__":
+    main()
