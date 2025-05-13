@@ -23,9 +23,58 @@
             margin: 20px auto;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Tech Stack Chips Styling */
+        .tech-chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tech-chip {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e9ecef;
+            border-radius: 16px;
+            padding: 4px 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            font-size: 0.875rem;
+        }
+
+        .tech-chip-remove {
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 1.2rem;
+            line-height: 1;
+            padding: 0 0 0 5px;
+            cursor: pointer;
+        }
+
+        .tech-chip-remove:hover {
+            color: #dc3545;
+        }
+
+        .tech-suggestion {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tech-suggestion:hover {
+            background-color: #6c757d !important;
+            color: white !important;
+        }
+
+        /* Category/Subcategory Custom Inputs */
+        #customCategory, #customSubCategory {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
+
+    <body>
 
     <div id="admin-login-view" class="container mt-5">
         <h2 class="text-center mb-4">IRIS Admin Login</h2>
@@ -63,19 +112,21 @@
                     <div class="loading-spinner"></div>
                     <p>Loading jobs...</p>
                 </div>
-                </div>
+            </div>
         </div>
     </div>
 
     <div class="modal fade" id="jobModal" tabindex="-1" aria-labelledby="jobModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl"> <div class="modal-content">
+        <div class="modal-dialog modal-xl"> 
+            <div class="modal-content">
                 <form id="jobForm">
                     <div class="modal-header">
                         <h5 class="modal-title" id="jobModalLabel">Add/Edit Job</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" id="jobId"> <div class="row">
+                        <input type="hidden" id="jobId"> 
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="title" class="form-label">Job Title*</label>
                                 <input type="text" class="form-control" id="title" required>
@@ -85,50 +136,220 @@
                                 <input type="text" class="form-control" id="companyName" required>
                             </div>
                         </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="companyLogo" class="form-label">Company Logo</label>
                                 <input type="file" class="form-control" id="companyLogo" accept="image/png, image/jpeg, image/gif, image/webp">
                                 <img id="logoPreview" src="#" alt="Logo Preview"/>
-                                <input type="hidden" id="companyLogoUrl"> </div>
+                                <input type="hidden" id="companyLogoUrl">
+                            </div>
                             <div class="col-md-6 mb-3">
                                 <label for="location" class="form-label">Location*</label>
                                 <input type="text" class="form-control" id="location" placeholder="e.g., Remote, Chennai, India" required>
                             </div>
                         </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="category" class="form-label">Category*</label>
-                                <input type="text" class="form-control" id="category" placeholder="e.g., Technology" required>
+                                <select class="form-select" id="category" required>
+                                    <option value="" disabled selected>Select a category</option>
+                                    <!-- Standard categories -->
+                                    <option value="Technology">Technology</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Operations">Operations</option>
+                                    <option value="Human Resources">Human Resources</option>
+                                    <option value="Customer Service">Customer Service</option>
+                                    <option value="Administrative">Administrative</option>
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Other">Other (specify)</option>
+                                </select>
+                                <input type="text" class="form-control mt-2" id="customCategory" placeholder="Specify other category" style="display: none;">
                             </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label for="subCategory" class="form-label">Sub-Category*</label>
-                                <input type="text" class="form-control" id="subCategory" placeholder="e.g., Backend Development" required>
+                                <select class="form-select" id="subCategory" required>
+                                    <option value="" disabled selected>Select a sub-category</option>
+                                    <!-- Technology sub-categories -->
+                                    <option data-parent="Technology" value="Frontend Development">Frontend Development</option>
+                                    <option data-parent="Technology" value="Backend Development">Backend Development</option>
+                                    <option data-parent="Technology" value="Full Stack Development">Full Stack Development</option>
+                                    <option data-parent="Technology" value="Mobile Development">Mobile Development</option>
+                                    <option data-parent="Technology" value="DevOps">DevOps</option>
+                                    <option data-parent="Technology" value="Data Science">Data Science</option>
+                                    <option data-parent="Technology" value="Machine Learning">Machine Learning</option>
+                                    <option data-parent="Technology" value="QA Testing">QA Testing</option>
+                                    <option data-parent="Technology" value="UI/UX Design">UI/UX Design</option>
+                                    <option data-parent="Technology" value="Cybersecurity">Cybersecurity</option>
+                                    
+                                    <!-- Finance sub-categories -->
+                                    <option data-parent="Finance" value="Accounting">Accounting</option>
+                                    <option data-parent="Finance" value="Investment Banking">Investment Banking</option>
+                                    <option data-parent="Finance" value="Financial Analysis">Financial Analysis</option>
+                                    <option data-parent="Finance" value="Wealth Management">Wealth Management</option>
+                                    <option data-parent="Finance" value="Risk Management">Risk Management</option>
+                                    <option data-parent="Finance" value="Tax Planning">Tax Planning</option>
+                                    
+                                    <!-- Healthcare sub-categories -->
+                                    <option data-parent="Healthcare" value="Nursing">Nursing</option>
+                                    <option data-parent="Healthcare" value="Medical Doctor">Medical Doctor</option>
+                                    <option data-parent="Healthcare" value="Healthcare Administration">Healthcare Administration</option>
+                                    <option data-parent="Healthcare" value="Physical Therapy">Physical Therapy</option>
+                                    <option data-parent="Healthcare" value="Mental Health">Mental Health</option>
+                                    
+                                    <!-- Education sub-categories -->
+                                    <option data-parent="Education" value="Teaching">Teaching</option>
+                                    <option data-parent="Education" value="Administration">Administration</option>
+                                    <option data-parent="Education" value="Curriculum Development">Curriculum Development</option>
+                                    <option data-parent="Education" value="Educational Technology">Educational Technology</option>
+                                    
+                                    <!-- Marketing sub-categories -->
+                                    <option data-parent="Marketing" value="Digital Marketing">Digital Marketing</option>
+                                    <option data-parent="Marketing" value="Content Marketing">Content Marketing</option>
+                                    <option data-parent="Marketing" value="SEO/SEM">SEO/SEM</option>
+                                    <option data-parent="Marketing" value="Social Media">Social Media</option>
+                                    <option data-parent="Marketing" value="Brand Management">Brand Management</option>
+                                    
+                                    <!-- Sales sub-categories -->
+                                    <option data-parent="Sales" value="Business Development">Business Development</option>
+                                    <option data-parent="Sales" value="Account Management">Account Management</option>
+                                    <option data-parent="Sales" value="Inside Sales">Inside Sales</option>
+                                    <option data-parent="Sales" value="Outside Sales">Outside Sales</option>
+                                    
+                                    <!-- Design sub-categories -->
+                                    <option data-parent="Design" value="Graphic Design">Graphic Design</option>
+                                    <option data-parent="Design" value="UX/UI Design">UX/UI Design</option>
+                                    <option data-parent="Design" value="Product Design">Product Design</option>
+                                    <option data-parent="Design" value="Web Design">Web Design</option>
+                                    
+                                    <!-- Operations sub-categories -->
+                                    <option data-parent="Operations" value="Project Management">Project Management</option>
+                                    <option data-parent="Operations" value="Supply Chain">Supply Chain</option>
+                                    <option data-parent="Operations" value="Logistics">Logistics</option>
+                                    <option data-parent="Operations" value="Business Operations">Business Operations</option>
+                                    
+                                    <!-- Human Resources sub-categories -->
+                                    <option data-parent="Human Resources" value="Recruiting">Recruiting</option>
+                                    <option data-parent="Human Resources" value="Employee Relations">Employee Relations</option>
+                                    <option data-parent="Human Resources" value="Compensation & Benefits">Compensation & Benefits</option>
+                                    <option data-parent="Human Resources" value="HR Management">HR Management</option>
+                                    
+                                    <!-- Customer Service sub-categories -->
+                                    <option data-parent="Customer Service" value="Call Center">Call Center</option>
+                                    <option data-parent="Customer Service" value="Technical Support">Technical Support</option>
+                                    <option data-parent="Customer Service" value="Customer Success">Customer Success</option>
+                                    
+                                    <!-- Administrative sub-categories -->
+                                    <option data-parent="Administrative" value="Office Management">Office Management</option>
+                                    <option data-parent="Administrative" value="Executive Assistant">Executive Assistant</option>
+                                    <option data-parent="Administrative" value="Data Entry">Data Entry</option>
+                                    
+                                    <!-- Engineering sub-categories -->
+                                    <option data-parent="Engineering" value="Civil Engineering">Civil Engineering</option>
+                                    <option data-parent="Engineering" value="Mechanical Engineering">Mechanical Engineering</option>
+                                    <option data-parent="Engineering" value="Electrical Engineering">Electrical Engineering</option>
+                                    <option data-parent="Engineering" value="Chemical Engineering">Chemical Engineering</option>
+                                    
+                                    <option value="Other">Other (specify)</option>
+                                </select>
+                                <input type="text" class="form-control mt-2" id="customSubCategory" placeholder="Specify other sub-category" style="display: none;">
                             </div>
                         </div>
-                         <div class="mb-3">
+                        
+                        <div class="mb-3">
                             <label for="description" class="form-label">Job Description*</label>
                             <textarea class="form-control" id="description" rows="5" placeholder="Enter full job description (HTML can be used for formatting)" required></textarea>
                         </div>
+                        
                         <div class="mb-3">
                             <label for="requirements" class="form-label">Requirements*</label>
                             <textarea class="form-control" id="requirements" rows="4" placeholder="Enter key requirements and qualifications (HTML can be used)" required></textarea>
                         </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="experienceLevel" class="form-label">Experience Level*</label>
                                 <input type="text" class="form-control" id="experienceLevel" placeholder="e.g., 3-5 years, Entry Level" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="techStacks" class="form-label">Tech Stacks (comma-separated)*</label>
-                                <input type="text" class="form-control" id="techStacks" placeholder="e.g., Python, React, Node.js, AWS" required>
+                                <label for="techStackInput" class="form-label">Skills & Technologies*</label>
+                                <div class="tech-stack-container">
+                                    <input type="text" class="form-control mb-2" id="techStackInput" 
+                                        placeholder="Type any relevant skill and press Enter (e.g., AutoCAD, Python, SPSS, Surgery)">
+                                    <div id="techStackChips" class="tech-chip-container mb-2"></div>
+                                    <div class="tech-stack-suggestions mb-2">
+                                        <div class="small text-muted mb-1">Common examples by field (click to add):</div>
+                                        <div class="d-flex flex-wrap gap-1 small mb-1">
+                                            <span class="badge bg-info text-white">Technology</span>
+                                            <span class="badge bg-secondary text-white">Engineering</span>
+                                            <span class="badge bg-success text-white">Healthcare</span>
+                                            <span class="badge bg-warning text-dark">Business</span>
+                                            <span class="badge bg-danger text-white">Education</span>
+                                            <span class="badge bg-primary text-white">Science</span>
+                                        </div>
+                                        <div id="techStackSuggestions" class="d-flex flex-wrap gap-1">
+                                            <!-- Technology Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Technology">JavaScript</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Technology">Python</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Technology">React</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Technology">SQL</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Technology">AWS</span>
+                                            
+                                            <!-- Engineering Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Engineering">AutoCAD</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Engineering">SolidWorks</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Engineering">MATLAB</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Engineering">PLC Programming</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Engineering">Structural Analysis</span>
+                                            
+                                            <!-- Healthcare Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Healthcare">Patient Assessment</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Healthcare">EMR/EHR</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Healthcare">Pharmacology</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Healthcare">Clinical Research</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Healthcare">Medical Imaging</span>
+                                            
+                                            <!-- Business Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Business">Financial Analysis</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Business">Project Management</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Business">MS Excel</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Business">Tableau</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Business">QuickBooks</span>
+                                            
+                                            <!-- Education Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Education">Curriculum Development</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Education">Student Assessment</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Education">Learning Management Systems</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Education">Special Education</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Education">Instructional Design</span>
+                                            
+                                            <!-- Science Skills -->
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Science">Statistical Analysis</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Science">Laboratory Techniques</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Science">SPSS</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Science">Scientific Writing</span>
+                                            <span class="badge bg-light text-dark tech-suggestion" data-category="Science">GC-MS</span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="techStacks" name="techStacks" required>
+                                    <div class="form-text">Required skills, tools, and technologies for this role (retain the name "techStacks" in the hidden field for database compatibility)</div>
+                                </div>
                             </div>
                         </div>
+                        
                         <div class="mb-3">
                             <label for="previousInterviewQuestions" class="form-label">Previous Interview Questions</label>
                             <div class="small text-muted mb-2">Enter one question per line or separate with commas</div>
                             <textarea class="form-control" id="previousInterviewQuestions" rows="3" placeholder="Optional: Known questions asked previously (e.g. 'Explain dependency injection', 'Describe your experience with agile methodologies')"></textarea>
                         </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="sourceLink" class="form-label">Source Link</label>
@@ -139,6 +360,7 @@
                                 <input type="text" class="form-control" id="salaryRange" placeholder="Optional: e.g., ₹12L - ₹18L PA">
                             </div>
                         </div>
+                        
                         <div class="row align-items-end">
                             <div class="col-md-4 mb-3">
                                 <label for="postedDate" class="form-label">Posted Date*</label>
@@ -150,15 +372,16 @@
                                 <div class="form-text" id="expiryDateHelp"></div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                 <label for="status" class="form-label">Status*</label>
-                                 <select class="form-select" id="status" required>
-                                     <option value="active" selected>Active</option>
-                                     <option value="inactive">Inactive</option>
-                                     <option value="expired">Expired</option>
-                                 </select>
+                                <label for="status" class="form-label">Status*</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="expired">Expired</option>
+                                </select>
                             </div>
                         </div>
-                         <div class="form-check mb-3">
+                        
+                        <div class="form-check mb-3">
                             <input class="form-check-input" type="checkbox" value="" id="relocation">
                             <label class="form-check-label" for="relocation">
                                 Relocation Offered
@@ -168,12 +391,11 @@
                         <hr>
                         <h5>Custom Fields <small class="text-muted">(Optional)</small></h5>
                         <div id="customFieldsContainer" class="mb-2">
-                            </div>
+                        </div>
                         <button type="button" class="btn btn-outline-secondary btn-sm mb-3" id="addCustomFieldBtn">
-                           <i class="fas fa-plus"></i> Add Custom Field
+                            <i class="fas fa-plus"></i> Add Custom Field
                         </button>
                         <hr>
-
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -193,6 +415,227 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="auth-admin.js"></script>
     <script type="module" src="app-admin.js"></script>
+    <script>
+        // --- Category and Subcategory Management ---
+        document.addEventListener('DOMContentLoaded', function() {
+            initCategoryManager();
+            initTechStackManager();
+        });
 
+        function initCategoryManager() {
+            const categorySelect = document.getElementById('category');
+            const subCategorySelect = document.getElementById('subCategory');
+            const customCategoryInput = document.getElementById('customCategory');
+            const customSubCategoryInput = document.getElementById('customSubCategory');
+            
+            // Check if elements exist
+            if (!categorySelect || !subCategorySelect) {
+                console.warn("Category or subcategory elements not found");
+                return;
+            }
+
+            // Show/hide custom category input based on selection
+            categorySelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                
+                // Toggle custom input visibility
+                if (selectedValue === 'Other') {
+                    customCategoryInput.style.display = 'block';
+                    customCategoryInput.required = true;
+                } else {
+                    customCategoryInput.style.display = 'none';
+                    customCategoryInput.required = false;
+                    customCategoryInput.value = '';
+                }
+                
+                // Filter subcategories based on selected category
+                Array.from(subCategorySelect.options).forEach(option => {
+                    const parentCategory = option.getAttribute('data-parent');
+                    
+                    // Special handling for "Other" option - always show it
+                    if (option.value === 'Other' || option.value === '' || !parentCategory) {
+                        option.style.display = '';
+                    } else {
+                        // Only show subcategories that match the selected parent category
+                        option.style.display = (parentCategory === selectedValue) ? '' : 'none';
+                    }
+                });
+                
+                // Reset subcategory selection when category changes
+                subCategorySelect.value = '';
+                if (customSubCategoryInput) {
+                    customSubCategoryInput.style.display = 'none';
+                    customSubCategoryInput.required = false;
+                    customSubCategoryInput.value = '';
+                }
+            });
+            
+            // Show/hide custom subcategory input based on selection
+            subCategorySelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                
+                // Toggle custom input visibility
+                if (selectedValue === 'Other') {
+                    customSubCategoryInput.style.display = 'block';
+                    customSubCategoryInput.required = true;
+                } else {
+                    customSubCategoryInput.style.display = 'none';
+                    customSubCategoryInput.required = false;
+                    customSubCategoryInput.value = '';
+                }
+            });
+        }
+
+        // --- Tech Stack Management ---
+        function initTechStackManager() {
+            const techStackInput = document.getElementById('techStackInput');
+            const techStackChips = document.getElementById('techStackChips');
+            const techStacksHidden = document.getElementById('techStacks');
+            const techStackSuggestions = document.getElementById('techStackSuggestions');
+            
+            // Check if elements exist
+            if (!techStackInput || !techStackChips || !techStacksHidden) {
+                console.warn("Tech stack elements not found");
+                return;
+            }
+            
+            // Current tech stacks array
+            let techStacks = [];
+            
+            // Function to update tech stacks hidden input and UI
+            function updateTechStacks() {
+                if (techStacksHidden) {
+                    techStacksHidden.value = JSON.stringify(techStacks);
+                }
+                
+                if (techStackChips) {
+                    techStackChips.innerHTML = '';
+                    techStacks.forEach(tech => {
+                        const chip = document.createElement('div');
+                        chip.className = 'tech-chip';
+                        chip.innerHTML = `
+                            <span>${tech}</span>
+                            <button type="button" class="tech-chip-remove" data-tech="${tech}">&times;</button>
+                        `;
+                        techStackChips.appendChild(chip);
+                    });
+                }
+            }
+            
+            // Add a tech stack
+            function addTechStack(tech) {
+                tech = tech.trim();
+                if (tech && !techStacks.includes(tech)) {
+                    techStacks.push(tech);
+                    updateTechStacks();
+                    
+                    // Focus back on input for quick additions
+                    if (techStackInput) {
+                        techStackInput.value = '';
+                        techStackInput.focus();
+                    }
+                }
+            }
+            
+            // Remove a tech stack
+            function removeTechStack(tech) {
+                techStacks = techStacks.filter(t => t !== tech);
+                updateTechStacks();
+            }
+            
+            // Handle tech stack input
+            techStackInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const value = this.value.trim();
+                    if (value) {
+                        // Allow multiple tags separated by commas
+                        if (value.includes(',')) {
+                            const tags = value.split(',');
+                            tags.forEach(tag => {
+                                if (tag.trim()) {
+                                    addTechStack(tag.trim());
+                                }
+                            });
+                        } else {
+                            addTechStack(value);
+                        }
+                    }
+                }
+            });
+            
+            // Handle clicks on tech stack chips to remove
+            techStackChips.addEventListener('click', function(e) {
+                if (e.target.classList.contains('tech-chip-remove')) {
+                    const tech = e.target.getAttribute('data-tech');
+                    if (tech) {
+                        removeTechStack(tech);
+                    }
+                }
+            });
+            
+            // Handle clicks on tech stack suggestions
+            if (techStackSuggestions) {
+                techStackSuggestions.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('tech-suggestion')) {
+                        const tech = e.target.textContent;
+                        addTechStack(tech);
+                    }
+                });
+            }
+            
+            // Also initialize if we're editing an existing job
+            if (document.getElementById('jobId') && document.getElementById('jobId').value) {
+                // We're in edit mode, try to load existing tech stacks
+                const jobId = document.getElementById('jobId').value;
+                if (jobId && window.firebase && window.firebase.firestore) {
+                    window.firebase.firestore().collection('jobPostings').doc(jobId).get()
+                        .then(doc => {
+                            if (doc.exists) {
+                                const jobData = doc.data();
+                                if (jobData.techStacks && Array.isArray(jobData.techStacks)) {
+                                    techStacks = [...jobData.techStacks];
+                                    updateTechStacks();
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error getting job data:", error);
+                        });
+                }
+            }
+        }
+
+        // Also modify the form submission handler to get values correctly
+        if (document.getElementById('jobForm')) {
+            const originalSubmitHandler = document.getElementById('jobForm').onsubmit;
+            
+            document.getElementById('jobForm').onsubmit = function(e) {
+                e.preventDefault();
+                
+                // Handle custom category/subcategory values
+                let finalCategory = document.getElementById('category').value;
+                let finalSubCategory = document.getElementById('subCategory').value;
+                
+                // If "Other" is selected, use the custom input values
+                if (finalCategory === 'Other' && document.getElementById('customCategory').value) {
+                    finalCategory = document.getElementById('customCategory').value.trim();
+                }
+                
+                if (finalSubCategory === 'Other' && document.getElementById('customSubCategory').value) {
+                    finalSubCategory = document.getElementById('customSubCategory').value.trim();
+                }
+                
+                // Set the values back to the form elements for the original handler to use
+                document.getElementById('category').dataset.finalValue = finalCategory;
+                document.getElementById('subCategory').dataset.finalValue = finalSubCategory;
+                
+                // Continue with original form submission logic
+                if (typeof originalSubmitHandler === 'function') {
+                    return originalSubmitHandler.call(this, e);
+                }
+            };
+        }
+    </script>
 </body>
 </html>

@@ -138,20 +138,19 @@ if (jobForm) {
             alert("Admin not logged in! Please refresh and log in.");
             return;
         }
-        // Optional: Re-verify claim just before write operation
+        
         try {
-            const token = await currentUser.getIdTokenResult(true); // Force refresh
+            const token = await currentUser.getIdTokenResult(true);
             if (!token.claims.isAdmin) {
                 alert("Authorization Error! You no longer have permission.");
-                auth.signOut(); // Sign out if claims changed
+                auth.signOut();
                 return;
             }
         } catch(claimError) {
-             console.error("Error fetching claims during save:", claimError);
-             alert("Could not verify admin status. Please try again.");
-             return;
+            console.error("Error fetching claims during save:", claimError);
+            alert("Could not verify admin status. Please try again.");
+            return;
         }
-
 
         if (saveJobBtn) {
             saveJobBtn.disabled = true;
@@ -160,22 +159,33 @@ if (jobForm) {
 
         const id = jobIdField.value;
 
-        // --- CORRECTED Timestamp Helper ---
+        // Timestamp helper function
         const toTimestamp = (dateStr) => {
             if (!dateStr) return null;
             try {
                 const date = new Date(dateStr + 'T00:00:00');
-                // Use window.firebase here because 'firebase' was not imported directly
                 return window.firebase.firestore.Timestamp.fromDate(date);
             } catch (e) {
                 console.error("Invalid date format:", dateStr, e);
                 return null;
             }
         };
-        // --- End Timestamp Helper ---
+        
+        // Handle the category and subcategory fields
+        let finalCategory = jobForm.category.value;
+        let finalSubCategory = jobForm.subCategory.value;
+        
+        // If "Other" is selected, use the custom input values
+        if (finalCategory === 'Other' && document.getElementById('customCategory').value) {
+            finalCategory = document.getElementById('customCategory').value.trim();
+        }
+        
+        if (finalSubCategory === 'Other' && document.getElementById('customSubCategory').value) {
+            finalSubCategory = document.getElementById('customSubCategory').value.trim();
+        }
 
+        // Handle logo upload
         let logoUrl = companyLogoUrlField.value;
-
         if (currentLogoFile) {
             console.log("Uploading new logo...");
             try {
@@ -193,23 +203,34 @@ if (jobForm) {
                 return;
             }
         }
+        
+        // Parse tech stacks
+        let techStacksArray = [];
+        try {
+            const techStacksValue = document.getElementById('techStacks').value;
+            techStacksArray = JSON.parse(techStacksValue);
+        } catch (e) {
+            // Fallback to original method
+            techStacksArray = jobForm.techStacks.value.split(',').map(s => s.trim()).filter(s => s);
+        }
 
+        // Complete job data object
         const jobData = {
             title: jobForm.title.value.trim(),
             companyName: jobForm.companyName.value.trim(),
             companyLogoUrl: logoUrl || null,
             location: jobForm.location.value.trim(),
-            category: jobForm.category.value.trim(),
-            subCategory: jobForm.subCategory.value.trim(),
+            category: finalCategory,
+            subCategory: finalSubCategory,
             description: jobForm.description.value.trim(),
             requirements: jobForm.requirements.value.trim(),
             experienceLevel: jobForm.experienceLevel.value.trim(),
-            techStacks: jobForm.techStacks.value.split(',').map(s => s.trim()).filter(s => s),
+            techStacks: techStacksArray,
             previousInterviewQuestions: jobForm.previousInterviewQuestions.value
-            .replace(/\r\n/g, '\n')  // Normalize line breaks
-            .split(/[,\n]/)          // Split by commas or line breaks
-            .map(s => s.trim())
-            .filter(s => s),
+                .replace(/\r\n/g, '\n')
+                .split(/[,\n]/)
+                .map(s => s.trim())
+                .filter(s => s),
             sourceLink: jobForm.sourceLink.value.trim(),
             salaryRange: jobForm.salaryRange.value.trim(),
             postedDate: toTimestamp(jobForm.postedDate.value),
@@ -218,7 +239,7 @@ if (jobForm) {
             status: jobForm.status.value,
             customFields: getCustomFieldsData(),
             uploadedBy: currentUser.uid,
-            updatedAt: serverTimestamp() // Use the imported FieldValue constant
+            updatedAt: serverTimestamp()
         };
 
         try {
@@ -228,7 +249,7 @@ if (jobForm) {
                 operation = db.collection('jobPostings').doc(id).update(jobData);
             } else {
                 console.log("Adding new job");
-                jobData.createdAt = serverTimestamp(); // Use the imported FieldValue constant
+                jobData.createdAt = serverTimestamp();
                 operation = db.collection('jobPostings').add(jobData);
             }
 
@@ -249,14 +270,460 @@ if (jobForm) {
             console.error("Error saving job to Firestore:", error);
             alert("Error saving job: " + error.message);
         } finally {
-             if (saveJobBtn) {
-                 saveJobBtn.disabled = false;
-                 saveJobBtn.textContent = 'Save Job';
-             }
+            if (saveJobBtn) {
+                saveJobBtn.disabled = false;
+                saveJobBtn.textContent = 'Save Job';
+            }
         }
     });
-} else {
-     console.error("Job Form element not found in the DOM.");
+}
+
+// Complete Tech Stack Management Implementation
+function initTechStackManager() {
+    const techStackInput = document.getElementById('techStackInput');
+    const techStackChips = document.getElementById('techStackChips');
+    const techStacksHidden = document.getElementById('techStacks');
+    const techStackSuggestions = document.getElementById('techStackSuggestions');
+    
+    // Current tech stacks array
+    let techStacks = [];
+    
+    // Function to update tech stacks hidden input and UI
+    function updateTechStacks() {
+        if (techStacksHidden) {
+            techStacksHidden.value = JSON.stringify(techStacks);
+        }
+        
+        if (techStackChips) {
+            techStackChips.innerHTML = '';
+            techStacks.forEach(tech => {
+                const chip = document.createElement('div');
+                chip.className = 'tech-chip';
+                chip.innerHTML = `
+                    <span>${tech}</span>
+                    <button type="button" class="tech-chip-remove" data-tech="${tech}">&times;</button>
+                `;
+                techStackChips.appendChild(chip);
+            });
+        }
+    }
+    
+    // Add a tech stack
+    function addTechStack(tech) {
+        tech = tech.trim();
+        if (tech && !techStacks.includes(tech)) {
+            techStacks.push(tech);
+            updateTechStacks();
+            
+            // Focus back on input for quick additions
+            if (techStackInput) {
+                techStackInput.value = '';
+                techStackInput.focus();
+            }
+        }
+    }
+    
+    // Remove a tech stack
+    function removeTechStack(tech) {
+        techStacks = techStacks.filter(t => t !== tech);
+        updateTechStacks();
+    }
+    
+    // Handle tech stack input
+    if (techStackInput) {
+        // Remove any existing listeners
+        const newTechStackInput = techStackInput.cloneNode(true);
+        if (techStackInput.parentNode) {
+            techStackInput.parentNode.replaceChild(newTechStackInput, techStackInput);
+        }
+        
+        newTechStackInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = this.value.trim();
+                if (value) {
+                    // Allow multiple tags separated by commas
+                    if (value.includes(',')) {
+                        const tags = value.split(',');
+                        tags.forEach(tag => {
+                            if (tag.trim()) {
+                                addTechStack(tag);
+                            }
+                        });
+                    } else {
+                        addTechStack(value);
+                    }
+                }
+            }
+        });
+    }
+    
+    // Handle clicks on tech stack chips to remove
+    if (techStackChips) {
+        // Remove any existing listeners
+        const newTechStackChips = techStackChips.cloneNode(true);
+        if (techStackChips.parentNode) {
+            techStackChips.parentNode.replaceChild(newTechStackChips, techStackChips);
+        }
+        
+        newTechStackChips.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tech-chip-remove')) {
+                const tech = e.target.getAttribute('data-tech');
+                if (tech) {
+                    removeTechStack(tech);
+                }
+            }
+        });
+    }
+    
+    // Handle clicks on tech stack suggestions
+    if (techStackSuggestions) {
+        // Remove any existing listeners
+        const newTechStackSuggestions = techStackSuggestions.cloneNode(true);
+        if (techStackSuggestions.parentNode) {
+            techStackSuggestions.parentNode.replaceChild(newTechStackSuggestions, techStackSuggestions);
+        }
+        
+        newTechStackSuggestions.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tech-suggestion')) {
+                const tech = e.target.textContent;
+                addTechStack(tech);
+            }
+        });
+    }
+    
+    // Initialize from existing data when editing
+    if (jobForm && jobIdField && jobIdField.value) {
+        // Get existing tech stacks from the form
+        const existingInput = jobForm.techStacks;
+        if (existingInput && existingInput.value) {
+            try {
+                // Try parsing as JSON first
+                let techArray = [];
+                try {
+                    techArray = JSON.parse(existingInput.value);
+                } catch (e) {
+                    // If not valid JSON, handle as comma-separated string
+                    techArray = existingInput.value.split(',').map(s => s.trim()).filter(Boolean);
+                }
+                
+                techStacks = techArray;
+                updateTechStacks();
+            } catch (e) {
+                console.error('Error initializing tech stacks:', e);
+            }
+        }
+    }
+    
+    // Return functions for external use if needed
+    return {
+        addTechStack,
+        removeTechStack,
+        getTechStacks: () => [...techStacks],
+        setTechStacks: (newTechStacks) => {
+            if (Array.isArray(newTechStacks)) {
+                techStacks = [...newTechStacks];
+                updateTechStacks();
+            }
+        }
+    };
+}
+
+// Complete Category and SubCategory Management Implementation
+function initCategoryManager() {
+    const categorySelect = document.getElementById('category');
+    const subCategorySelect = document.getElementById('subCategory');
+    const customCategoryInput = document.getElementById('customCategory');
+    const customSubCategoryInput = document.getElementById('customSubCategory');
+    
+    // Common categories and subcategories
+    const categorySubcategoryMap = {
+        'Technology': [
+            'Frontend Development',
+            'Backend Development',
+            'Full Stack Development',
+            'Mobile Development',
+            'DevOps',
+            'Data Science',
+            'Machine Learning',
+            'QA Testing',
+            'UI/UX Design',
+            'Cybersecurity'
+        ],
+        'Finance': [
+            'Accounting',
+            'Investment Banking',
+            'Financial Analysis',
+            'Wealth Management',
+            'Risk Management',
+            'Tax Planning',
+            'Corporate Finance',
+            'Financial Planning'
+        ],
+        'Healthcare': [
+            'Nursing',
+            'Medical Doctor',
+            'Healthcare Administration',
+            'Physical Therapy',
+            'Mental Health',
+            'Dentistry',
+            'Pharmacy',
+            'Medical Research'
+        ],
+        'Education': [
+            'Teaching',
+            'Administration',
+            'Curriculum Development',
+            'Educational Technology',
+            'Special Education',
+            'Higher Education',
+            'Early Childhood Education',
+            'Corporate Training'
+        ],
+        'Marketing': [
+            'Digital Marketing',
+            'Content Marketing',
+            'SEO/SEM',
+            'Social Media Marketing',
+            'Market Research',
+            'Brand Management',
+            'Public Relations',
+            'Email Marketing'
+        ],
+        'Sales': [
+            'Business Development',
+            'Account Management',
+            'Inside Sales',
+            'Outside Sales',
+            'Sales Operations',
+            'Sales Management',
+            'Retail Sales',
+            'Technical Sales'
+        ],
+        'Design': [
+            'Graphic Design',
+            'UX/UI Design',
+            'Product Design',
+            'Web Design',
+            'Industrial Design',
+            'Fashion Design',
+            'Interior Design',
+            'Brand Design'
+        ],
+        'Operations': [
+            'Project Management',
+            'Supply Chain',
+            'Logistics',
+            'Facilities Management',
+            'Quality Assurance',
+            'Process Improvement',
+            'Business Operations',
+            'Office Management'
+        ]
+    };
+    
+    // Initialize category dropdown
+    function initializeCategories() {
+        if (!categorySelect) return;
+        
+        // Clear and add default option
+        categorySelect.innerHTML = '<option value="" disabled selected>Select a category</option>';
+        
+        // Add standard categories
+        Object.keys(categorySubcategoryMap).sort().forEach(category => {
+            categorySelect.innerHTML += `<option value="${category}">${category}</option>`;
+        });
+        
+        // Add "Other" option
+        categorySelect.innerHTML += '<option value="Other">Other (specify)</option>';
+    }
+    
+    // Update subcategory options based on selected category
+    function updateSubcategories(selectedCategory) {
+        if (!subCategorySelect) return;
+        
+        // Clear and add default option
+        subCategorySelect.innerHTML = '<option value="" disabled selected>Select a sub-category</option>';
+        
+        // If no category selected, just leave the default option
+        if (!selectedCategory || selectedCategory === 'Other') {
+            subCategorySelect.innerHTML += '<option value="Other">Other (specify)</option>';
+            return;
+        }
+        
+        // Add subcategories for the selected category
+        const subcategories = categorySubcategoryMap[selectedCategory] || [];
+        subcategories.sort().forEach(subcategory => {
+            subCategorySelect.innerHTML += `<option value="${subcategory}">${subcategory}</option>`;
+        });
+        
+        // Add "Other" option
+        subCategorySelect.innerHTML += '<option value="Other">Other (specify)</option>';
+    }
+    
+    // Show/hide custom category input based on selection
+    function toggleCustomCategoryInput() {
+        if (!customCategoryInput) return;
+        
+        const selectedValue = categorySelect.value;
+        if (selectedValue === 'Other') {
+            customCategoryInput.style.display = 'block';
+            customCategoryInput.required = true;
+        } else {
+            customCategoryInput.style.display = 'none';
+            customCategoryInput.required = false;
+            customCategoryInput.value = ''; // Clear the value when hidden
+        }
+    }
+    
+    // Show/hide custom subcategory input based on selection
+    function toggleCustomSubcategoryInput() {
+        if (!customSubCategoryInput) return;
+        
+        const selectedValue = subCategorySelect.value;
+        if (selectedValue === 'Other') {
+            customSubCategoryInput.style.display = 'block';
+            customSubCategoryInput.required = true;
+        } else {
+            customSubCategoryInput.style.display = 'none';
+            customSubCategoryInput.required = false;
+            customSubCategoryInput.value = ''; // Clear the value when hidden
+        }
+    }
+    
+    // Add event listeners
+    function setupEventListeners() {
+        if (categorySelect) {
+            // Remove existing listeners by cloning and replacing
+            const newCategorySelect = categorySelect.cloneNode(true);
+            if (categorySelect.parentNode) {
+                categorySelect.parentNode.replaceChild(newCategorySelect, categorySelect);
+            }
+            
+            // Update reference to the new element
+            categorySelect = newCategorySelect;
+            
+            // Add event listener to category select
+            categorySelect.addEventListener('change', function() {
+                updateSubcategories(this.value);
+                toggleCustomCategoryInput();
+                
+                // Reset subcategory selection
+                if (subCategorySelect) {
+                    subCategorySelect.value = '';
+                    toggleCustomSubcategoryInput();
+                }
+            });
+        }
+        
+        if (subCategorySelect) {
+            // Remove existing listeners by cloning and replacing
+            const newSubCategorySelect = subCategorySelect.cloneNode(true);
+            if (subCategorySelect.parentNode) {
+                subCategorySelect.parentNode.replaceChild(newSubCategorySelect, subCategorySelect);
+            }
+            
+            // Update reference to the new element
+            subCategorySelect = newSubCategorySelect;
+            
+            // Add event listener to subcategory select
+            subCategorySelect.addEventListener('change', function() {
+                toggleCustomSubcategoryInput();
+            });
+        }
+    }
+    
+    // Initialize with existing values if editing
+    function initializeFromExistingData() {
+        if (!jobForm || !jobIdField || !jobIdField.value) return;
+        
+        const existingCategory = document.querySelector('#category').dataset.existingValue || '';
+        const existingSubCategory = document.querySelector('#subCategory').dataset.existingValue || '';
+        
+        if (existingCategory) {
+            // Check if the existing category is in our predefined list
+            if (Object.keys(categorySubcategoryMap).includes(existingCategory)) {
+                categorySelect.value = existingCategory;
+            } else {
+                // If not in predefined list, select "Other" and set custom value
+                categorySelect.value = 'Other';
+                if (customCategoryInput) {
+                    customCategoryInput.value = existingCategory;
+                    customCategoryInput.style.display = 'block';
+                    customCategoryInput.required = true;
+                }
+            }
+            
+            // Trigger change event to update subcategory options
+            const changeEvent = new Event('change');
+            categorySelect.dispatchEvent(changeEvent);
+            
+            // If there's a subcategory, set it after subcategory options are updated
+            if (existingSubCategory) {
+                // Wait a bit for the subcategory options to update
+                setTimeout(() => {
+                    // Check if the value is in the current options
+                    let subCategoryFound = false;
+                    if (subCategorySelect) {
+                        Array.from(subCategorySelect.options).forEach(option => {
+                            if (option.value === existingSubCategory) {
+                                subCategoryFound = true;
+                            }
+                        });
+                        
+                        if (subCategoryFound) {
+                            subCategorySelect.value = existingSubCategory;
+                        } else {
+                            // If not in options, select "Other" and set custom value
+                            subCategorySelect.value = 'Other';
+                            if (customSubCategoryInput) {
+                                customSubCategoryInput.value = existingSubCategory;
+                                customSubCategoryInput.style.display = 'block';
+                                customSubCategoryInput.required = true;
+                            }
+                        }
+                        
+                        // Trigger change event
+                        const subChangeEvent = new Event('change');
+                        subCategorySelect.dispatchEvent(subChangeEvent);
+                    }
+                }, 100);
+            }
+        }
+    }
+    
+    // Initialize everything
+    initializeCategories();
+    setupEventListeners();
+    initializeFromExistingData();
+    
+    // Return functions for external use if needed
+    return {
+        getCategoryValue: () => {
+            if (categorySelect.value === 'Other' && customCategoryInput) {
+                return customCategoryInput.value.trim();
+            }
+            return categorySelect.value;
+        },
+        getSubCategoryValue: () => {
+            if (subCategorySelect.value === 'Other' && customSubCategoryInput) {
+                return customSubCategoryInput.value.trim();
+            }
+            return subCategorySelect.value;
+        },
+        reset: () => {
+            categorySelect.value = '';
+            if (subCategorySelect) subCategorySelect.value = '';
+            if (customCategoryInput) {
+                customCategoryInput.value = '';
+                customCategoryInput.style.display = 'none';
+            }
+            if (customSubCategoryInput) {
+                customSubCategoryInput.value = '';
+                customSubCategoryInput.style.display = 'none';
+            }
+        }
+    };
 }
 
 
@@ -342,11 +809,11 @@ async function loadJobsForAdmin() {
     }
 }
 
-// --- Event Delegation for Edit/Delete Buttons ---
 if (jobListingsContainerAdmin) {
     jobListingsContainerAdmin.addEventListener('click', async (e) => {
         const editButton = e.target.closest('.edit-job-btn');
         const deleteButton = e.target.closest('.delete-job-btn');
+        const toggleStatusButton = e.target.closest('.toggle-status-btn');
 
         if (editButton) {
             const jobId = editButton.dataset.id;
@@ -355,7 +822,7 @@ if (jobListingsContainerAdmin) {
             const docRef = db.collection('jobPostings').doc(jobId);
             try {
                 const docSnap = await docRef.get();
-                if (docSnap.exists()) {
+                if (docSnap.exists) { // Fixed: using exists as a property, not a function
                     const jobData = docSnap.data();
                     jobIdField.value = docSnap.id;
                     jobForm.title.value = jobData.title || '';
@@ -393,17 +860,17 @@ if (jobListingsContainerAdmin) {
 
                     populateCustomFields(jobData.customFields || {});
 
-                     // Ensure modal title reflects "Edit"
+                    // Ensure modal title reflects "Edit"
                     const modalTitle = document.getElementById('jobModalLabel');
-                    if(modalTitle) modalTitle.textContent = 'Edit Job Posting';
+                    if (modalTitle) modalTitle.textContent = 'Edit Job Posting';
 
                     if (jobModal) jobModal.show();
                 } else {
                     alert("Error: Job posting not found.");
                 }
             } catch (error) {
-                 console.error("Error fetching job for edit:", error);
-                 alert("Error loading job details: " + error.message);
+                console.error("Error fetching job for edit:", error);
+                alert("Error loading job details: " + error.message);
             }
 
         } else if (deleteButton) {
@@ -505,3 +972,4 @@ if (expiryDateInput && expiryDateHelp) {
         }
     });
 }
+
